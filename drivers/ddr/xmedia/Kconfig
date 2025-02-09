@@ -1,0 +1,5 @@
+config DDR_TRAINING_V2
+	bool "ddr training test tool"
+	default n
+	help
+	  DDR training test tool.

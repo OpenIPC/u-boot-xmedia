@@ -1,0 +1,52 @@
+ifeq ($(CONFIG_AUDIO_ENABLE),y)
+ifeq ($(CONFIG_PRODUCTNAME),$(filter $(CONFIG_PRODUCTNAME), "xm72050300" "xm72050200" "xm72020300" "xm76050100"))
+AO_ARCH_NAME = xm72050200
+ACODEC_NAME = v750
+endif
+cflags-y += -I$(srctree)/product/audio/ao/$(AO_ARCH_NAME)
+cflags-y += -I$(srctree)/product/audio/acodec/$(ACODEC_NAME)
+ccflags-y += $(cflags-y)
+obj-y += cmd_ao.o
+endif
+
+# Osd command
+ifeq ($(CONFIG_OSD_ENABLE),y)
+# for dec
+ifneq ($(CONFIG_PRODUCTNAME),"xm72050300")
+ifneq ($(CONFIG_PRODUCTNAME),"xm72050200")
+ifneq ($(CONFIG_PRODUCTNAME),"xm72020300")
+ifneq ($(CONFIG_PRODUCTNAME),"xm76050100")
+ifneq ($(CONFIG_PRODUCTNAME),"xm72050500")
+ifneq ($(CONFIG_PRODUCTNAME),"xm720xxx")
+obj-y += cmd_dec.o
+endif
+endif
+endif
+endif
+endif
+endif
+
+# for vo
+ifeq ($(CONFIG_PRODUCTNAME),"xm72050200")
+obj-y += cmd_vo_xm72050200.o
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72050300")
+obj-y += cmd_vo_xm72050200.o
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72020300")
+obj-y += cmd_vo_xm72050200.o
+else ifeq ($(CONFIG_PRODUCTNAME),"xm76050100")
+obj-y += cmd_vo_xm72050200.o
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72050500")
+obj-y += cmd_vo_xm72050200.o
+else ifeq ($(CONFIG_PRODUCTNAME),"xm720xxx")
+obj-y += cmd_vo_xm72050200.o
+endif
+
+cflags-y     += -I$(srctree)/product/osd/vo/include
+cflags-y     += -I$(srctree)/product/osd/include
+cflags-y     += -I$(srctree)/product/osd/hdmi/hdmi_2_0
+cflags-y     += -I$(srctree)/product/osd/vo/arch/$(VO_ARCH_NAME)/include
+cflags-y     += -I$(srctree)/product/osd/vo/arch/$(VO_ARCH_NAME)/include/$(VO_SUB_ARCH_NAME)
+ccflags-y    += -DCONFIG_HDMI_SUPPORT
+ccflags-y    += $(cflags-y)
+obj-y += cmd_vo.o
+endif

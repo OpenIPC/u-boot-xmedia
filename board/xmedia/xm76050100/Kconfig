@@ -1,0 +1,15 @@
+if TARGET_XM76050100
+
+config SYS_BOARD
+	default "xm76050100"
+
+config SYS_VENDOR
+	default "xmedia"
+
+config SYS_SOC
+	default "xm76050100"
+
+config SYS_CONFIG_NAME
+	default "xm76050100"
+
+endif

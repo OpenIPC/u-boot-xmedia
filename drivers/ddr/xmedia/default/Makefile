@@ -1,0 +1,13 @@
+obj-y := ddr_training_impl.o
+obj-y += ddr_ac_training.o
+obj-y += ddr_dcc_training.o
+obj-y += ddr_lpca_training.o
+obj-y += ddr_mpr_training.o
+obj-y += ddr_wl_training.o
+obj-y += ddr_training_ctl.o
+obj-y += ddr_training_boot.o
+obj-y += ddr_training_console.o
+obj-y += ddr_training_custom.o
+obj-y += ddr_cmd_loc.o
+obj-y += ddr_cmd_ctl.o
+obj-y += cmd_ddr_training_v2.o

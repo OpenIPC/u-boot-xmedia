@@ -1,0 +1,17 @@
+#
+# I2C subsystem configuration
+#
+
+menu "LHS I2C support"
+
+config LHS_I2C
+        bool "lhs i2c"
+        help
+          LHS I2C support.
+
+config CMD_LHS_I2C
+        bool "cmd lhs i2c"
+        help
+          CMD LHS I2C support.
+
+endmenu

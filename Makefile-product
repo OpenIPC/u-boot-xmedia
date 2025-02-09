@@ -1,0 +1,75 @@
+# FOR AUDIO
+ifeq ($(CONFIG_AUDIO_ENABLE), y)
+ifeq ($(CONFIG_PRODUCTNAME),"xm72050200")
+libs-y += product/audio/acodec/v750/
+libs-y += product/audio/ao/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72050300")
+libs-y += product/audio/acodec/v750/
+libs-y += product/audio/ao/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72020300")
+libs-y += product/audio/acodec/v750/
+libs-y += product/audio/ao/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm76050100")
+libs-y += product/audio/acodec/v750/
+libs-y += product/audio/ao/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72050500")
+libs-y += product/audio/acodec/v750/
+libs-y += product/audio/ao/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm720xxx")
+libs-y += product/audio/acodec/v750/
+libs-y += product/audio/ao/xm72050200/
+endif
+endif
+
+ifeq ($(CONFIG_OSD_ENABLE),y)
+# FOR DEC of all chip
+ifneq ($(CONFIG_PRODUCTNAME),"xm72050200")
+ifneq ($(CONFIG_PRODUCTNAME),"xm72050300")
+ifneq ($(CONFIG_PRODUCTNAME),"xm72020300")
+ifneq ($(CONFIG_PRODUCTNAME),"xm76050100")
+ifneq ($(CONFIG_PRODUCTNAME),"xm72050500")
+ifneq ($(CONFIG_PRODUCTNAME),"xm720xxx")
+libs-y += ./product/osd/dec/
+endif
+endif
+endif
+endif
+endif
+endif
+
+# FOR VO,HDMI,MIPI_Tx
+
+ifeq ($(CONFIG_PRODUCTNAME),"xm72050300")
+libs-y += ./product/osd/vo/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72050200")
+libs-y += ./product/osd/vo/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72020300")
+libs-y += ./product/osd/vo/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm76050100")
+libs-y += ./product/osd/vo/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm72050500")
+libs-y += ./product/osd/vo/xm72050200/
+else ifeq ($(CONFIG_PRODUCTNAME),"xm720xxx")
+libs-y += ./product/osd/vo/xm72050200/
+else
+$(warning "warning: "$(CONFIG_PRODUCTNAME)" is invalid")
+endif
+
+endif # end of ifeq ($(CONFIG_OSD_ENABLE),y)
+
+ifndef CONFIG_MINI_BOOT
+ifdef CONFIG_CIPHER_ENABLE
+libs-y += product/otp/
+libs-y += product/cipher/
+endif
+endif
+
+ifeq ($(CONFIG_AUTO_UPDATE),y)
+libs-y += product/update/
+endif
+
+ifeq ($(CONFIG_XMEDIA_QUICK_START),y)
+libs-y += product/pdm/
+libs-y += product/media/
+endif
+libs-y += product/main/

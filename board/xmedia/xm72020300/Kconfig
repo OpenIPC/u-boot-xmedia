@@ -1,0 +1,15 @@
+if TARGET_XM72020300
+
+config SYS_BOARD
+	default "xm72020300"
+
+config SYS_VENDOR
+	default "xmedia"
+
+config SYS_SOC
+	default "xm72020300"
+
+config SYS_CONFIG_NAME
+	default "xm72020300"
+
+endif
