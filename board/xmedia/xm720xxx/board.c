@@ -170,7 +170,7 @@ int dram_init(void)
 {
 	DECLARE_GLOBAL_DATA_PTR;
 
-	gd->ram_size = PHYS_SDRAM_1_SIZE;
+	gd->ram_size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE, 0x20000000);
 	print_size(gd->ram_size, "\n");
 	return 0;
 }

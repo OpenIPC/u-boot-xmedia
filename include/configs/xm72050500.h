@@ -338,4 +338,6 @@
 
 #define CONFIG_BOOT_HEAD_SIZE		(CONFIG_KEY_AREA_LEN + CONFIG_AUXAREA_LEN)
 
+#include "xm-common.h"
+
 #endif /* __GK7205V200_H */

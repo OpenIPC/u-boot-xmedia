@@ -32,7 +32,8 @@ CFLAGS   := -Os -pipe  \
 	-DCMD_TEXT_BASE=$(CMD_TEXT_BASE) -DSTACK_POINT=$(STACK_POINT) -DDDR_TRAINING_CMD -D__KERNEL__ -D__UBOOT__ \
 	-fno-builtin -ffreestanding -I$(TOPDIR)/../../../source/bootloader/u-boot-2020.01/arch/$(ARCH)/include \
 	-I$(TOPDIR)/../../../source/bootloader/u-boot-2020.01/include  -I$(TOPDIR)/include \
-	-I../ -I./ -I$(TOPDIR)/drivers/ddr/xmedia/$(SOC)/ -I$(TOPDIR)/../../../source/bootloader/u-boot-2020.01/arch/$(ARCH)/include/asm
+	-I../ -I./ -I$(TOPDIR)/drivers/ddr/xmedia/$(SOC)/ -I$(TOPDIR)/../../../source/bootloader/u-boot-2020.01/arch/$(ARCH)/include/asm \
+	-I${BOOT_SRCDIR}/include -I${BOOT_SRCDIR}/arch/arm/include/asm -I${BOOT_SRCDIR}/drivers/ddr/xmedia/xm720xxx/ -I${BOOT_SRCDIR}/arch/arm/include
 
 CFLAGS += $(PLATFORM_RELFLAGS) $(PLATFORM_CPPFLAGS)
 

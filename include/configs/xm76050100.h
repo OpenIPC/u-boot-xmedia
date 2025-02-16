@@ -223,4 +223,7 @@
 /* Open it as you need #define CONFIG_EDMA_PLL_TRAINNING */
 
 #define SECUREBOOT_OTP_REG_BASE_ADDR_PHY            (0x10090000)
+
+#include "xm-common.h"
+
 #endif /* __XM76050100_H */

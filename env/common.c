@@ -118,6 +118,14 @@ int env_import(const char *buf, int check)
 
 		if (crc32(0, ep->data, ENV_SIZE) != crc) {
 			env_set_default("bad CRC", 0);
+			char msize[16];
+			sprintf(msize, "%dM", gd->ram_size / 1024 / 1024);
+			env_set("totalmem", msize);
+			if (crc == 0xffffffff) {
+				printf("Saving default environment...\n");
+				env_save();
+			}
+				
 			return -ENOMSG; /* needed for env_load() */
 		}
 	}
