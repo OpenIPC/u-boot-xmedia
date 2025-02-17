@@ -5,7 +5,7 @@
 
 #ifndef CONFIG_NO_HEAD
 
-.section .tail,#alloc
+.section .tail,"a"
 
 .align  9 /* align to 0x200 */
 

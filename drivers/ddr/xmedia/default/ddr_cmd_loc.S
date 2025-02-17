@@ -2,7 +2,7 @@
  * Copyright (c) XMEDIA. All rights reserved.
  */
 
-.section .image,#alloc
+.section .image,"a"
 
 .globl g_ddr_training_cmd_start
 g_ddr_training_cmd_start:
