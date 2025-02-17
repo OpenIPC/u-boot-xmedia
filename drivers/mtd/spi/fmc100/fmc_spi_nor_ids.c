@@ -173,7 +173,7 @@ static struct spi_drv spi_driver_general = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_general_entry_4addr,
-	.qe_enable = spi_general_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 static struct spi_drv spi_driver_no_qe = {
@@ -188,7 +188,7 @@ static struct spi_drv spi_driver_s25fl256s = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_s25fl256s_entry_4addr,
-	.qe_enable = spi_general_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #include "fmc100_spi_w25q256fv.c"
@@ -196,14 +196,14 @@ static struct spi_drv spi_driver_w25q256fv = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_w25q256fv_entry_4addr,
-	.qe_enable = spi_w25q256fv_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 static struct spi_drv spi_driver_w25q256jv = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_w25q256jv_entry_4addr,
-	.qe_enable = spi_w25q256fv_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #include "fmc100_spi_mx25l25635e.c"
@@ -211,7 +211,7 @@ static struct spi_drv spi_driver_mx25l25635e = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_general_entry_4addr,
-	.qe_enable = spi_mx25l25635e_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 #ifdef CONFIG_DTR_MODE_SUPPORT
 	.dtr_set_device =
 	spi_mxic_output_driver_strength_set,
@@ -222,7 +222,7 @@ static struct spi_drv spi_driver_f25l64q = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_general_entry_4addr,
-	.qe_enable = spi_mx25l25635e_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #include "fmc100_spi_gd25qxxx.c"
@@ -230,7 +230,7 @@ static struct spi_drv spi_driver_gd25qxxx = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_gd25q256_entry_4addr,
-	.qe_enable = spi_gd25qxxx_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #include "fmc100_spi_micron.c"
@@ -246,7 +246,7 @@ static struct spi_drv spi_driver_xtx = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_general_entry_4addr,
-	.qe_enable = spi_xtx_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #include "fmc100_spi_puya.c"
@@ -254,7 +254,7 @@ static struct spi_drv spi_driver_puya = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_puya_entry_4addr,
-	.qe_enable = spi_puya_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 
@@ -263,7 +263,7 @@ static struct spi_drv spi_driver_issi = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_s25fl256s_entry_4addr,
-	.qe_enable = spi_issi_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #include "fmc100_spi_nm25q128.c"
@@ -271,7 +271,7 @@ static struct spi_drv spi_driver_nm25q128 = {
 	.wait_ready = spi_general_wait_ready,
 	.write_enable = spi_general_write_enable,
 	.entry_4addr = spi_nm25q128_entry_4addr,
-	.qe_enable = spi_nm25q128_qe_enable,
+	.qe_enable = spi_do_not_qe_enable,
 };
 
 #define SPI_NOR_ID_TBL_VER     "1.0"
@@ -2325,10 +2325,12 @@ static void fmc_map_iftype_and_clock(struct fmc_spi *spi)
 	const int iftype_read[] = {
 		SPI_IF_READ_STD,    IF_TYPE_STD,
 		SPI_IF_READ_FAST,   IF_TYPE_STD,
+#if 0
 		SPI_IF_READ_DUAL,   IF_TYPE_DUAL,
 		SPI_IF_READ_DUAL_ADDR,  IF_TYPE_DIO,
 		SPI_IF_READ_QUAD,   IF_TYPE_QUAD,
 		SPI_IF_READ_QUAD_ADDR,  IF_TYPE_QIO,
+#endif
 #ifdef CONFIG_DTR_MODE_SUPPORT
 		SPI_IF_READ_QUAD_DTR,   IF_TYPE_DTR,
 #endif
@@ -2336,10 +2338,12 @@ static void fmc_map_iftype_and_clock(struct fmc_spi *spi)
 	};
 	const int iftype_write[] = {
 		SPI_IF_WRITE_STD,   IF_TYPE_STD,
+#if 0
 		SPI_IF_WRITE_DUAL,  IF_TYPE_DUAL,
 		SPI_IF_WRITE_DUAL_ADDR, IF_TYPE_DIO,
 		SPI_IF_WRITE_QUAD,  IF_TYPE_QUAD,
 		SPI_IF_WRITE_QUAD_ADDR, IF_TYPE_QIO,
+#endif
 		0,          0,
 	};
 

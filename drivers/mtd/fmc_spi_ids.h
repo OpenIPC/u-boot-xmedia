@@ -31,6 +31,7 @@
 #define SPI_IF_ERASE_SECTOR_256K	0x10
 
 /*****************************************************************************/
+#if 0
 #define FMC_SPI_NOR_SUPPORT_READ  (SPI_IF_READ_STD | \
 					SPI_IF_READ_FAST | \
 					SPI_IF_READ_DUAL | \
@@ -38,25 +39,41 @@
 					SPI_IF_READ_QUAD | \
 					SPI_IF_READ_QUAD_ADDR | \
 					SPI_IF_READ_QUAD_DTR)
+#else
+#define FMC_SPI_NOR_SUPPORT_READ  (SPI_IF_READ_STD | \
+	SPI_IF_READ_FAST)
+#endif
 
+#if 0
 #define FMC_SPI_NOR_SUPPORT_WRITE (SPI_IF_WRITE_STD | \
 					SPI_IF_WRITE_DUAL | \
 					SPI_IF_WRITE_DUAL_ADDR | \
 					SPI_IF_WRITE_QUAD | \
 					SPI_IF_WRITE_QUAD_ADDR)
+#else
+#define FMC_SPI_NOR_SUPPORT_WRITE (SPI_IF_WRITE_STD)
+#endif
 
 #define FMC_SPI_NOR_STR_MAX_DUMMY	 7
 #define FMC_SPI_NOR_DTR_MAX_DUMMY	 12
 
 /******************************************************************************/
+#if 0
 #define FMC_SPI_NAND_SUPPORT_READ (SPI_IF_READ_STD | \
 					SPI_IF_READ_FAST | \
 					SPI_IF_READ_DUAL | \
 					SPI_IF_READ_DUAL_ADDR | \
 					SPI_IF_READ_QUAD | \
 					SPI_IF_READ_QUAD_ADDR)
+#else
+#define FMC_SPI_NAND_SUPPORT_READ (SPI_IF_READ_STD | SPI_IF_READ_FAST)
+#endif
 
+#if 0
 #define FMC_SPI_NAND_SUPPORT_WRITE	(SPI_IF_WRITE_STD | SPI_IF_WRITE_QUAD)
+#else
+#define FMC_SPI_NAND_SUPPORT_WRITE	(SPI_IF_WRITE_STD)
+#endif
 
 #define FMC_SPI_NAND_SUPPORT_MAX_DUMMY	8
 
@@ -265,6 +282,29 @@ SPI_IF_WRITE_QUAD_ADDR, SPI_CMD_WRITE_QUAD_ADDR4B, _dummy_, _size_, _clk_ }
 		read_quad_addr_##_dummy_##_size_##_clk_
 #define read_quad_addr4b(_dummy_, _size_, _clk_) \
 		read_quad_addr4b_##_dummy_##_size_##_clk_
+
+// We redefine all read functions to read_fast and set 80MHz clock
+// to effectively disable DUAL/QUAD read on all SPI NOR ids
+// #define read_std(_dummy_, _size_, _clk_) read_std_##_dummy_##_size_##_clk_
+// #define read_std4b(_dummy_, _size_, _clk_) read_std4b_##_dummy_##_size_##_clk_
+// #define read_fast(_dummy_, _size_, _clk_) read_fast_##_dummy_##_size_##_clk_
+// #define read_fast4b(_dummy_, _size_, _clk_) \
+// 					read_fast4b_##_dummy_##_size_##_clk_
+// #define read_dual(_dummy_, _size_, _clk_) read_fast_##1##_size_##80
+// #define read_dual4b(_dummy_, _size_, _clk_) \
+// 					read_fast4b_##1##_size_##80
+// #define read_dual_addr(_dummy_, _size_, _clk_) \
+// 		read_fast_##1##_size_##80
+// #define read_dual_addr4b(_dummy_, _size_, _clk_) \
+// 		read_fast4b_##1##_size_##80
+// #define read_quad(_dummy_, _size_, _clk_) read_fast_##_dummy_##_size_##80
+// #define read_quad4b(_dummy_, _size_, _clk_) \
+// 					read_fast4b_##_dummy_##_size_##80
+// #define read_quad_addr(_dummy_, _size_, _clk_) \
+// 		read_fast_##1##_size_##80
+// #define read_quad_addr4b(_dummy_, _size_, _clk_) \
+// 		read_fast4b_##1##_size_##80
+
 #ifdef CONFIG_DTR_MODE_SUPPORT
 #define read_quad_dtr(_dummy_, _size_, _clk_) \
 		read_quad_dtr_##_dummy_##_size_##_clk_
@@ -278,6 +318,7 @@ SPI_IF_WRITE_QUAD_ADDR, SPI_CMD_WRITE_QUAD_ADDR4B, _dummy_, _size_, _clk_ }
 #define write_std(_dummy_, _size_, _clk_) write_std_##_dummy_##_size_##_clk_
 #define write_std4b(_dummy_, _size_, _clk_) \
 					write_std4b_##_dummy_##_size_##_clk_
+
 #define write_dual(_dummy_, _size_, _clk_) write_dual_##_dummy_##_size_##_clk_
 #define write_dual4b(_dummy_, _size_, _clk_) \
 					write_dual4b_##_dummy_##_size_##_clk_
@@ -292,6 +333,22 @@ SPI_IF_WRITE_QUAD_ADDR, SPI_CMD_WRITE_QUAD_ADDR4B, _dummy_, _size_, _clk_ }
 		write_quad_addr_##_dummy_##_size_##_clk_
 #define write_quad_addr4b(_dummy_, _size_, _clk_) \
 		write_quad_addr4b_##_dummy_##_size_##_clk_
+
+// #define write_dual(_dummy_, _size_, _clk_) write_std_##_dummy_##_size_##80
+// #define write_dual4b(_dummy_, _size_, _clk_) \
+// 					write_std4b_##_dummy_##_size_##80
+// #define write_dual_addr(_dummy_, _size_, _clk_) \
+// 		write_std_##_dummy_##_size_##80
+// #define write_dual_addr4b(_dummy_, _size_, _clk_) \
+// 		write_std4b_##_dummy_##_size_##80
+// #define write_quad(_dummy_, _size_, _clk_) write_std_##_dummy_##_size_##80
+// #define write_quad4b(_dummy_, _size_, _clk_) \
+// 					write_std4b_##_dummy_##_size_##80
+// #define write_quad_addr(_dummy_, _size_, _clk_) \
+// 		write_std_##_dummy_##_size_##80
+// #define write_quad_addr4b(_dummy_, _size_, _clk_) \
+// 		write_std4b_##_dummy_##_size_##80
+
 
 /*****************************************************************************/
 #define erase_sector_4k(_dummy_, _size_, _clk_) \

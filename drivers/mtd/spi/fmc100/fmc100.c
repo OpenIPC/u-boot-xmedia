@@ -875,9 +875,11 @@ void spi_lock_update_address(struct fmc_host *host)
 	unsigned char mid = host->spi_nor_info->ids[0];
 	struct fmc_spi *spi = host->spi;
 
+	fmc100_global_unlock(host);
+
 	if (!host->level) {
 		host->end_addr = 0;
-		fmc_pr(BP_DBG, "all blocks is unlocked.\n");
+		fmc_pr(BP_DBG, "all blocks are unlocked.\n");
 		return;
 	}
 
@@ -957,6 +959,7 @@ void fmc100_get_bp_lock_level(struct fmc_host *host)
 
 	/* match the manufacture ID to get the block protect info */
 	switch (mid) {
+	case 0xa1:
 	case MID_GD:
 	case MID_ESMT:
 	case MID_CFEON:
@@ -1018,6 +1021,7 @@ unsigned short fmc100_set_spi_lock_info(struct fmc_host *host)
 			val = fmc100_handle_bp_rdcr_info(host,
 							   SPI_CMD_RDCR_MX);
 		break;
+	case 0xa1:
 	case MID_GD:
 	case MID_ESMT:
 	case MID_CFEON:
@@ -1135,6 +1139,58 @@ static void fmc100_set_bp_val(struct fmc_host *host, unsigned short val)
 		FMC_OP_REG_OP_START;
 	fmc_write(host, FMC_OP, reg);
 	fmc_pr(BP_DBG, " Set OP[%#x]%#x\n", FMC_OP, reg);
+}
+
+void fmc100_global_unlock(struct fmc_host *host){
+	struct fmc_spi *spi = host->spi;
+	unsigned int reg, sr1, sr2, sr3, mask;
+
+	sr1 = spi_general_get_flash_register(spi, SPI_CMD_RDSR);
+	sr2 = spi_general_get_flash_register(spi, SPI_CMD_RDSR2);
+	sr3 = spi_general_get_flash_register(spi, SPI_CMD_RDSR3);
+
+	printf("SR1[%#x] SR2[%#x] SR3[%#x]\n", sr1, sr2, sr3);
+
+	mask = ((1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+	if (sr1 & mask) {
+		spi->driver->write_enable(spi);
+		printf("Unlocking flash: SR1 [%#x]->[%#x]\n", sr1, sr1 & ~mask);
+		writeb(sr1 & ~mask, host->iobase);
+
+		reg = fmc_cmd_cmd1(SPI_CMD_WRSR);
+		fmc_write(host, FMC_CMD, reg);
+	
+		reg = op_cfg_fm_cs(spi->chipselect) | OP_CFG_OEN_EN;
+		fmc_write(host, FMC_OP_CFG, reg);
+	
+		reg = fmc_data_num_cnt(SPI_NOR_SR_LEN);
+		fmc_write(host, FMC_DATA_NUM, reg);
+	
+		reg = fmc_op_cmd1_en(ENABLE) | fmc_op_write_data_en(ENABLE) | FMC_OP_REG_OP_START;
+		fmc_write(host, FMC_OP, reg);
+	
+		fmc_cmd_wait_cpu_finish(host);
+	}
+	mask = (1 << 3);
+	if (sr2 & mask) {
+		spi->driver->write_enable(spi);
+		printf("Disabling WPS: SR2 [%#x]->[%#x]\n", sr2, sr2 & ~mask);
+		writeb(sr2 & ~mask, host->iobase);
+
+		reg = fmc_cmd_cmd1(SPI_CMD_WRSR2);
+		fmc_write(host, FMC_CMD, reg);
+	
+		reg = op_cfg_fm_cs(spi->chipselect) | OP_CFG_OEN_EN;
+		fmc_write(host, FMC_OP_CFG, reg);
+	
+		reg = fmc_data_num_cnt(SPI_NOR_SR_LEN);
+		fmc_write(host, FMC_DATA_NUM, reg);
+	
+		reg = fmc_op_cmd1_en(ENABLE) | fmc_op_write_data_en(ENABLE) | FMC_OP_REG_OP_START;
+		fmc_write(host, FMC_OP, reg);
+	
+		fmc_cmd_wait_cpu_finish(host);
+	}
 }
 
 static void fmc100_set_bp_level(struct fmc_host *host, unsigned char level)
