@@ -1,0 +1,27 @@
+name: uboot
+on:
+  workflow_dispatch:
+
+jobs:
+  toolchain:
+    name: Uboot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-arm-linux-gnueabi u-boot-tools lzop gnutls-dev lzma-alone
+
+      - name: Hisi-Goke-XMedia
+        run: |
+          git clone https://github.com/openipc/u-boot-xmedia --depth 1
+          cd u-boot-xmedia
+          bash build.sh
+
+      - name: Upload
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          files: |
+            u-boot-*/output/*-nor.bin
+            u-boot-*/output/*-nand.bin
