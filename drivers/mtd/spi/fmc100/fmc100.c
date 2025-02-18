@@ -959,7 +959,9 @@ void fmc100_get_bp_lock_level(struct fmc_host *host)
 
 	/* match the manufacture ID to get the block protect info */
 	switch (mid) {
-	case 0xa1:
+	case MID_FM:
+	case MID_XTX:
+	case MID_SK:
 	case MID_GD:
 	case MID_ESMT:
 	case MID_CFEON:
@@ -1021,7 +1023,9 @@ unsigned short fmc100_set_spi_lock_info(struct fmc_host *host)
 			val = fmc100_handle_bp_rdcr_info(host,
 							   SPI_CMD_RDCR_MX);
 		break;
-	case 0xa1:
+	case MID_FM:
+	case MID_XTX:
+	case MID_SK:
 	case MID_GD:
 	case MID_ESMT:
 	case MID_CFEON:
