@@ -178,6 +178,7 @@
 /*---------------------------------------------------------------------
  * sdcard system updae
  * ---------------------------------------------------------------------*/
+#define CONFIG_AUTO_SD_UPDATE
 #ifdef CONFIG_AUTO_SD_UPDATE
 
 #ifndef CONFIG_SDHCI

@@ -26,6 +26,10 @@
 #define CONFIG_CMD_SOURCE
 #define CONFIG_VERSION_VARIABLE
 
+#ifdef CONFIG_MMC
+#define CONFIG_CMD_MMC
+#endif
+
 #undef CONFIG_ENV_OFFSET
 #define CONFIG_ENV_OFFSET 0x40000
 
@@ -34,7 +38,7 @@
 #define CONFIG_ENV_ROOTADDR 0x250000
 #define CONFIG_ENV_ROOTSIZE 0x500000
 
-#define CONFIG_BOOTARGS "mem=\\${osmem} console=ttyAMA0,115200 panic=20 root=/dev/mtdblock3 init=/init mtdparts=" SFC ":256k(boot),64k(env),2048k(kernel),\\${rootmtd}(rootfs),-(rootfs_data) \\${extras}"
+#define CONFIG_BOOTARGS "mem=\\${osmem} console=ttyAMA0,115200 panic=20 root=/dev/mtdblock3 rootfstype=squashfs init=/init mtdparts=" SFC ":256k(boot),64k(env),2048k(kernel),\\${rootmtd}(rootfs),-(rootfs_data) \\${extras}"
 #define CONFIG_BOOTCOMMAND "setenv bootcmd ${cmdnor}; sf probe 0; saveenv; run bootcmd"
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
