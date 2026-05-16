@@ -11,6 +11,10 @@
 /*****************************************************************************/
 struct spi_nor_info *spiinfo;
 
+#define SPI_READ_MAX_CLOCK_MHZ   80
+#define SPI_WRITE_MAX_CLOCK_MHZ  50
+#define SPI_ERASE_MAX_CLOCK_MHZ  SPI_WRITE_MAX_CLOCK_MHZ
+
 set_read_std(0, INFINITE, 33);
 set_read_std(0, INFINITE, 40);
 set_read_std(0, INFINITE, 45);
@@ -2434,6 +2438,8 @@ static void fmc_map_iftype_and_clock(struct fmc_spi *spi)
 			break;
 		}
 	}
+	if (spi->write->clock > SPI_WRITE_MAX_CLOCK_MHZ)
+		spi->write->clock = SPI_WRITE_MAX_CLOCK_MHZ;
 	fmc_get_fmc_best_2x_clock(&spi->write->clock);
 
 	/* Only an even number of values is required,so increase length is 2 */
@@ -2450,9 +2456,13 @@ static void fmc_map_iftype_and_clock(struct fmc_spi *spi)
 	else
 		fmc_get_fmc_best_2x_clock(&spi->read->clock);
 #else
+	if (spi->read->clock > SPI_READ_MAX_CLOCK_MHZ)
+		spi->read->clock = SPI_READ_MAX_CLOCK_MHZ;
 	fmc_get_fmc_best_2x_clock(&spi->read->clock);
 #endif
 
+	if (spi->erase->clock > SPI_ERASE_MAX_CLOCK_MHZ)
+		spi->erase->clock = SPI_ERASE_MAX_CLOCK_MHZ;
 	fmc_get_fmc_best_2x_clock(&spi->erase->clock);
 	spi->erase->iftype = IF_TYPE_STD;
 }
