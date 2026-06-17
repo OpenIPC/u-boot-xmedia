@@ -104,7 +104,7 @@ static struct spi_drv spi_driver_no_qe = {
 	.qe_enable = spi_do_not_qe_enable,
 };
 
-#define SPI_NAND_ID_TAB_VER     "2.7"
+#define SPI_NAND_ID_TAB_VER     "2.8"
 
 /* ****** SPI Nand ID Table ***************************************************
  * Version  Manufacturer    Chip Name   Size        Operation
@@ -160,6 +160,7 @@ static struct spi_drv spi_driver_no_qe = {
  *      Micron 1.8V MT29F4G01ABBFDW 512MB		Add 1 chip
  *	FM	    FM25S01-DND-A-G 128MB  	3.3V
  *	HUAHONG	    FM25S01A	    128MB	3.3V
+ * 2.8  GD 1.8V     GD5F1GM7UEYIG   128MB       Add 1 chip (id 0xc8 0x91)
  *****************************************************************************/
 struct spi_nand_info fmc_spi_nand_flash_table[] = {
 	/* Micron MT29F1G01ABA 1GBit */
@@ -414,6 +415,35 @@ struct spi_nand_info fmc_spi_nand_flash_table[] = {
 	{
 		.name      = "GD5F1GQ5UEYIGY",
 		.id        = {0xc8, 0x51},
+		.id_len    = _2B,
+		.chipsize  = _128M,
+		.erasesize = _128K,
+		.pagesize  = _2K,
+		.oobsize   = _128B,
+		.badblock_pos = BBP_FIRST_PAGE,
+		.read      = {
+			&read_std(1, INFINITE, 24), /* 24MHz */
+			&read_fast(1, INFINITE, 133),  /* 133MHz */
+			&read_dual(1, INFINITE, 133),  /* 133MHz */
+			&read_quad(1, INFINITE, 133),  /* 133MHz */
+			0
+		},
+		.write     = {
+			&write_std(0, 256, 133),  /* 133MHz */
+			&write_quad(0, 256, 133),  /* 133MHz */
+			0
+		},
+		.erase     = {
+			&erase_sector_128k(0, _128K, 133),  /* 133MHz */
+			0
+		},
+		.driver    = &spi_driver_general,
+	},
+
+	/* GD 1.8v GD5F1GM7UEYIG 1Gbit (on-die ECC 24bit/1K) */
+	{
+		.name      = "GD5F1GM7UEYIG",
+		.id        = {0xc8, 0x91},
 		.id_len    = _2B,
 		.chipsize  = _128M,
 		.erasesize = _128K,
