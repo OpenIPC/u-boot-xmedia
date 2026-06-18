@@ -75,12 +75,21 @@ jobs:
 
   # QEMU smoke test — boots each freshly-built NOR u-boot in the matching
   # widgetii/qemu-hisilicon machine model and asserts it prints a u-boot
-  # banner. All 11 SoCs have a machine model: the xm720-based gk7205v5xx
-  # parts were added in qemu-hisilicon 734c97b ("Add Goke GK7205V500 family
-  # emulation"), reusing the V4 address map (HISI_V4_COMMON_PERIPH).
+  # banner. All 11 SoCs have a machine model, but they split into two tiers:
+  #
+  #   * The 8 V4-class machines boot xmedia's NOR image and HARD-gate publish.
+  #   * The 3 xm720 V500 machines (gk7205v500/v510/v530) were added in
+  #     qemu-hisilicon 734c97b ("Add Goke GK7205V500 family emulation") but
+  #     have no boot-validated run script there yet, and xmedia's V500 parts
+  #     are RAM-loaded via defib (0x41000000) in production rather than
+  #     NOR-flash-booted — so this flash-boot smoke currently produces no
+  #     serial output for them. They run as a SOFT (non-blocking) signal via
+  #     continue-on-error so an immature-machine failure does not block the
+  #     pipeline; drop the `soft` flag once the machine boots the image.
   qemu_smoke:
     needs: build
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.soft || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -96,6 +105,10 @@ jobs:
           - gk7205v500
           - gk7205v510
           - gk7205v530
+        include:
+          - { soc: gk7205v500, soft: true }
+          - { soc: gk7205v510, soft: true }
+          - { soc: gk7205v530, soft: true }
     steps:
       - name: Install QEMU build deps
         run: |
