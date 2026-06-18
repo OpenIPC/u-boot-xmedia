@@ -43,6 +43,28 @@ jobs:
       - name: Build ${{ matrix.soc }}
         run: bash build.sh ${{ matrix.soc }}
 
+      - name: Check partition fit
+        run: |
+          # Boot partition sizes from this tree's mtdparts
+          # (include/configs/xm-common.h): NOR boot = 256 KiB, NAND/UBI
+          # boot = 768 KiB. An image larger than its boot partition
+          # overflows into env and bricks the device on upgrade — mirrors
+          # the CHECK_SIZE gate the dedicated per-SoC u-boot repos use.
+          rc=0
+          check() {
+            f="output/u-boot-${{ matrix.soc }}-$1.bin"
+            limit_kb="$2"
+            size_kb=$(($(stat -c %s "$f") / 1024))
+            echo "- $f: [${size_kb}KB/${limit_kb}KB]"
+            if [ "$size_kb" -gt "$limit_kb" ]; then
+              echo "-- size exceeded by: $((size_kb - limit_kb))KB" >&2
+              rc=1
+            fi
+          }
+          check nor 256
+          check nand 768
+          exit $rc
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -53,8 +75,9 @@ jobs:
 
   # QEMU smoke test — boots each freshly-built NOR u-boot in the matching
   # widgetii/qemu-hisilicon machine model and asserts it prints a u-boot
-  # banner. Only the V4-class SoCs have a machine model upstream; the
-  # xm720-based gk7205v5xx parts are intentionally omitted (no model yet).
+  # banner. All 11 SoCs have a machine model: the xm720-based gk7205v5xx
+  # parts were added in qemu-hisilicon 734c97b ("Add Goke GK7205V500 family
+  # emulation"), reusing the V4 address map (HISI_V4_COMMON_PERIPH).
   qemu_smoke:
     needs: build
     runs-on: ubuntu-latest
@@ -70,6 +93,9 @@ jobs:
           - gk7205v300
           - gk7202v300
           - gk7605v100
+          - gk7205v500
+          - gk7205v510
+          - gk7205v530
     steps:
       - name: Install QEMU build deps
         run: |
@@ -137,8 +163,10 @@ jobs:
             exit 1
           fi
 
-  # Publish job — uploads every built NOR/NAND image to the OpenIPC/firmware
-  # `latest` release, mirroring u-boot-hi3519v101. Common failure modes:
+  # Publish job — uploads the xmedia-exclusive NOR/NAND images to the
+  # OpenIPC/firmware `latest` release. SoCs owned by a dedicated per-SoC
+  # repo are deliberately NOT published here (see the loop below for which
+  # and why). Common failure modes:
   #   "GH_TOKEN environment variable required" / empty token: secret
   #     FIRMWARE_RELEASE_TOKEN is missing or unreadable (PRs from forks
   #     can't see secrets). Set with:
@@ -175,9 +203,20 @@ jobs:
               sleep $((i*10))
             done
           }
-          for soc in hi3516dv200 hi3516ev200 hi3516ev300 hi3518ev300 \
-                     gk7205v200 gk7205v300 gk7202v300 gk7605v100 \
-                     gk7205v500 gk7205v510 gk7205v530; do
+          # Publish ONLY the SoCs that no dedicated per-SoC u-boot repo owns.
+          # The canonical builds for the overlapping SoCs ship the
+          # u-boot-<soc>-universal.bin that OpenIPC/defib auto-fetches:
+          #   gk7202v300/gk7205v200/gk7205v300/gk7605v100 -> u-boot-gk7205v200
+          #   hi3516ev200/hi3516ev300/hi3518ev300         -> u-boot-hi3516ev200
+          # Publishing xmedia's -nor/-nand for those would be non-canonical
+          # dead weight (and bypasses their 256 KiB fit gate). xmedia is the
+          # sole source for:
+          #   hi3516dv200            (no dedicated repo)
+          #   gk7205v500/v510/v530   (xm720 V500 family; not in defib
+          #                           AVAILABLE_FIRMWARE — RAM-loaded via the
+          #                           V500 protocol with manual `-f`, where
+          #                           both the nor and nand variants are used)
+          for soc in hi3516dv200 gk7205v500 gk7205v510 gk7205v530; do
             for kind in nor nand; do
               f="artifacts/u-boot-${soc}/u-boot-${soc}-${kind}.bin"
               test -f "$f"
