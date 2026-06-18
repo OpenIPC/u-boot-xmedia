@@ -226,20 +226,20 @@ jobs:
               sleep $((i*10))
             done
           }
-          # Publish ONLY the SoCs that no dedicated per-SoC u-boot repo owns.
-          # The canonical builds for the overlapping SoCs ship the
-          # u-boot-<soc>-universal.bin that OpenIPC/defib auto-fetches:
+          # Publish ONLY the xm720 V500 family — the one set genuinely
+          # exclusive to xmedia. Every other SoC xmedia builds is consumed by
+          # OpenIPC/defib as u-boot-<soc>-universal.bin, owned by a dedicated
+          # repo, so xmedia's -nor/-nand for them is non-canonical dead weight:
           #   gk7202v300/gk7205v200/gk7205v300/gk7605v100 -> u-boot-gk7205v200
           #   hi3516ev200/hi3516ev300/hi3518ev300         -> u-boot-hi3516ev200
-          # Publishing xmedia's -nor/-nand for those would be non-canonical
-          # dead weight (and bypasses their 256 KiB fit gate). xmedia is the
-          # sole source for:
-          #   hi3516dv200            (no dedicated repo)
-          #   gk7205v500/v510/v530   (xm720 V500 family; not in defib
-          #                           AVAILABLE_FIRMWARE — RAM-loaded via the
-          #                           V500 protocol with manual `-f`, where
-          #                           both the nor and nand variants are used)
-          for soc in hi3516dv200 gk7205v500 gk7205v510 gk7205v530; do
+          #   hi3516dv200 -> u-boot-hi3516ev200 too (in defib AVAILABLE_FIRMWARE
+          #                  as -universal; that repo just hasn't committed its
+          #                  config-/reg_info_ files yet — not xmedia's to own)
+          # gk7205v500/v510/v530 are NOT in defib AVAILABLE_FIRMWARE: they are
+          # RAM-loaded via the V500 protocol with a manual `-f`, where the user
+          # picks the nor or nand variant — so -nor/-nand is the correct naming
+          # and no other repo builds these xm720 parts.
+          for soc in gk7205v500 gk7205v510 gk7205v530; do
             for kind in nor nand; do
               f="artifacts/u-boot-${soc}/u-boot-${soc}-${kind}.bin"
               test -f "$f"
