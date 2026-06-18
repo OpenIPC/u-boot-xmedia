@@ -1,0 +1,186 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+# Mirrors the CI shape of OpenIPC/u-boot-hi3519v101:
+#   build (matrix) -> qemu_smoke (where a machine model exists) -> publish.
+# Adapted to this tree's build.sh, SoC set and stock arm-linux-gnueabi
+# toolchain (no vendor toolchain download needed here).
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        soc:
+          - hi3516dv200
+          - hi3516ev200
+          - hi3516ev300
+          - hi3518ev300
+          - gk7205v200
+          - gk7205v300
+          - gk7202v300
+          - gk7605v100
+          - gk7205v500
+          - gk7205v510
+          - gk7205v530
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabi u-boot-tools lzop gnutls-dev lzma-alone
+
+      - name: Build ${{ matrix.soc }}
+        run: bash build.sh ${{ matrix.soc }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: u-boot-${{ matrix.soc }}
+          path: |
+            output/u-boot-${{ matrix.soc }}-nor.bin
+            output/u-boot-${{ matrix.soc }}-nand.bin
+
+  # QEMU smoke test — boots each freshly-built NOR u-boot in the matching
+  # widgetii/qemu-hisilicon machine model and asserts it prints a u-boot
+  # banner. Only the V4-class SoCs have a machine model upstream; the
+  # xm720-based gk7205v5xx parts are intentionally omitted (no model yet).
+  qemu_smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        soc:
+          - hi3516dv200
+          - hi3516ev200
+          - hi3516ev300
+          - hi3518ev300
+          - gk7205v200
+          - gk7205v300
+          - gk7202v300
+          - gk7605v100
+    steps:
+      - name: Install QEMU build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential ninja-build meson pkg-config \
+            libglib2.0-dev libpixman-1-dev libfdt-dev zlib1g-dev \
+            libslirp-dev python3 python3-venv
+
+      - name: Resolve qemu-hisilicon HEAD
+        id: qemu-rev
+        run: |
+          sha=$(git ls-remote https://github.com/widgetii/qemu-hisilicon master | cut -f1)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Cache qemu-system-arm
+        id: cache-qemu
+        uses: actions/cache@v4
+        with:
+          path: qemu-arm
+          key: qemu-hisilicon-${{ steps.qemu-rev.outputs.sha }}
+
+      - name: Build qemu-system-arm (cache miss)
+        if: steps.cache-qemu.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch master \
+            https://github.com/widgetii/qemu-hisilicon qemu-hisilicon
+          cd qemu-hisilicon
+          bash qemu/setup.sh
+          cp qemu-src/build/qemu-system-arm "$GITHUB_WORKSPACE/qemu-arm"
+          chmod +x "$GITHUB_WORKSPACE/qemu-arm"
+
+      - name: Download u-boot artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: u-boot-${{ matrix.soc }}
+
+      - name: Smoke-test in QEMU
+        timeout-minutes: 2
+        run: |
+          UBOOT="$PWD/u-boot-${{ matrix.soc }}-nor.bin"
+          test -f "$UBOOT"
+          dd if=/dev/zero of=/tmp/flash.bin bs=1M count=8 2>/dev/null
+          dd if="$UBOOT" of=/tmp/flash.bin bs=1 conv=notrunc 2>/dev/null
+          mkfifo /tmp/uart.in /tmp/uart.out
+          chmod +x ./qemu-arm
+          ./qemu-arm \
+            -M ${{ matrix.soc }},flash-file=/tmp/flash.bin \
+            -nographic -serial pipe:/tmp/uart \
+            -monitor none > /tmp/qemu.log 2>&1 &
+          QEMU_PID=$!
+          timeout 10 cat /tmp/uart.out > /tmp/uboot.txt || true
+          kill "$QEMU_PID" 2>/dev/null || true
+          wait 2>/dev/null || true
+          echo "== captured u-boot output =="
+          cat /tmp/uboot.txt
+          echo
+          if grep -qE 'U-Boot |Hit any key|CPU:|DRAM:|Board:' /tmp/uboot.txt; then
+            echo "PASS: u-boot booted past startup"
+          else
+            echo "FAIL: u-boot did not print a recognised banner"
+            echo
+            echo "== qemu stderr =="
+            tail -40 /tmp/qemu.log || true
+            exit 1
+          fi
+
+  # Publish job — uploads every built NOR/NAND image to the OpenIPC/firmware
+  # `latest` release, mirroring u-boot-hi3519v101. Common failure modes:
+  #   "GH_TOKEN environment variable required" / empty token: secret
+  #     FIRMWARE_RELEASE_TOKEN is missing or unreadable (PRs from forks
+  #     can't see secrets). Set with:
+  #       gh secret set FIRMWARE_RELEASE_TOKEN -R OpenIPC/u-boot-xmedia
+  #   401 Bad credentials: PAT expired or revoked — mint a new fine-grained
+  #     PAT (Contents: read+write on OpenIPC/firmware) and update the secret.
+  #   404 on `gh release upload latest`: the `latest` tag was deleted in
+  #     OpenIPC/firmware — recreate it before retrying.
+  publish:
+    needs: [build, qemu_smoke]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload to OpenIPC/firmware latest release
+        env:
+          GH_TOKEN: ${{ secrets.FIRMWARE_RELEASE_TOKEN }}
+        run: |
+          set -eu
+          # Releases API occasionally returns 502/503. Retry with backoff:
+          # 10s, 20s, 30s, 40s — total ~100s before giving up.
+          upload() {
+            local f="$1" i
+            for i in 1 2 3 4 5; do
+              if gh release upload latest "$f" --clobber -R OpenIPC/firmware; then
+                return 0
+              fi
+              [ "$i" = "5" ] && return 1
+              echo "upload attempt $i failed; sleeping $((i*10))s" >&2
+              sleep $((i*10))
+            done
+          }
+          for soc in hi3516dv200 hi3516ev200 hi3516ev300 hi3518ev300 \
+                     gk7205v200 gk7205v300 gk7202v300 gk7605v100 \
+                     gk7205v500 gk7205v510 gk7205v530; do
+            for kind in nor nand; do
+              f="artifacts/u-boot-${soc}/u-boot-${soc}-${kind}.bin"
+              test -f "$f"
+              upload "$f"
+            done
+          done
