@@ -2619,6 +2619,10 @@ static int chip_spi_init(struct mtd_info_ex *mtd,
 		ret = -1;
 		return ret;
 	}
+
+	if (ids[0] == MID_PUYA)
+		spi_puya_global_unlock(spi);
+
 	spi->driver->qe_enable(spi);
 
 	switch_to_4byte(spi, ids, MAX_SPI_NOR_ID_LEN);
