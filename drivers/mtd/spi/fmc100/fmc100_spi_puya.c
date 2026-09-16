@@ -125,10 +125,13 @@ static void spi_puya_global_unlock(struct fmc_spi *spi)
 	 * silently - this is the whole reason #2428 was so hard to diagnose.
 	 */
 	sr1 = spi_general_get_flash_register(spi, SPI_CMD_RDSR);
+	sr2 = spi_general_get_flash_register(spi, SPI_CMD_RDSR2);
 	sr3 = spi_general_get_flash_register(spi, SPI_CMD_RDSR3);
-	if ((sr1 & SPI_NOR_SR1_PROT_MASK) || (sr3 & SPI_NOR_SR3_WPS_MASK))
-		printf("Puya SPI nor: STILL PROTECTED, SR1[%#x] SR3[%#x] - "
-		       "erase and write will be discarded\n", sr1, sr3);
+	if ((sr1 & SPI_NOR_SR1_PROT_MASK) || (sr2 & SPI_NOR_SR2_PROT_MASK) ||
+	    (sr3 & SPI_NOR_SR3_WPS_MASK))
+		printf("Puya SPI nor: STILL PROTECTED, SR1[%#x] SR2[%#x] "
+		       "SR3[%#x] - erase and write will be discarded\n",
+		       sr1, sr2, sr3);
 }
 
 /*****************************************************************************/
