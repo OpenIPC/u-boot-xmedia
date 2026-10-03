@@ -78,6 +78,16 @@
 #define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=/dev/ubiblock0_1 ubi.mtd=2,2048 ubi.block=0,1 \${mtdparts} \${extras}"
 #define CONFIG_BOOTCOMMAND "setenv setargs setenv bootargs ${bootargs}; run setargs; ubi part ubi; ubi read ${baseaddr} kernel; bootm ${baseaddr}; reset"
 
+/*
+ * urnand writes rootfs.ubi with nand write.trimffs: a UBI image pads every
+ * eraseblock with 0xFF, and a plain nand write programs those pages, which
+ * stamps ECC parity and the empty-page mark on them.  When UBIFS later
+ * appends into such a page it is programmed twice and its ECC becomes
+ * uncorrectable (OpenIPC/firmware#2519).  trimffs leaves the trailing 0xFF
+ * pages of each block erased, as ubiformat does.
+ */
+#define CONFIG_CMD_NAND_TRIMFFS
+
 #define CONFIG_ENV_IS_IN_NAND
 #define CONFIG_ENV_OFFSET 0xc0000
 #define CONFIG_ENV_SIZE 0x40000
@@ -85,7 +95,7 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"baseaddr=0x42000000\0" \
-	"urnand=tftpboot ${baseaddr} rootfs.ubi.${soc} && nand erase 0x100000 0x7f00000; nand write ${baseaddr} 0x100000 ${filesize}\0" \
+	"urnand=tftpboot ${baseaddr} rootfs.ubi.${soc} && nand erase 0x100000 0x7f00000; nand write.trimffs ${baseaddr} 0x100000 ${filesize}\0" \
 	"mtdparts=mtdparts="SFC":768k(boot),256k(env),-(ubi)\0" \
 	"nfsroot=/srv/nfs/" __stringify(PRODUCT_SOC) "\0" \
 	"bootargsnfs=mem=\${osmem} console=ttyAMA0,115200 panic=20 root=/dev/nfs rootfstype=nfs ip=${ipaddr}:::255.255.255.0::eth0 nfsroot=${serverip}:${nfsroot},v3,nolock rw \${extras}\0" \
