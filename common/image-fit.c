@@ -1604,7 +1604,7 @@ int fit_check_format(const void *fit)
 	if (ret) {
 		debug("Wrong FIT format: not a flattened device tree (err=%d)\n",
 			  ret);
-		return -ENOEXEC;
+		return 0;
 	}
 
 	if (CONFIG_IS_ENABLED(FIT_FULL_CHECK)) {
@@ -1615,8 +1615,6 @@ int fit_check_format(const void *fit)
 		 */
 		size = fdt_totalsize(fit);
 		ret = fdt_check_full(fit, size);
-		if (ret)
-			ret = -EINVAL;
 
 		/*
 		 * U-Boot stopped using unit addressed in 2017. Since libfdt
@@ -1627,15 +1625,15 @@ int fit_check_format(const void *fit)
 		 */
 		if (!ret && CONFIG_IS_ENABLED(FIT_SIGNATURE)) {
 			ret = fdt_check_no_at(fit, 0);
-
 			if (ret) {
 				debug("FIT check error %d\n", ret);
-				return ret;
+				printf("Signature checking prevents use of unit addresses (@) in nodes\n");
+				return 0;
 			}
 		}
 		if (ret) {
 			debug("FIT check error %d\n", ret);
-			return ret;
+			return 0;
 		}
 	}
 
@@ -1992,13 +1990,10 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 	printf("## Loading %s from FIT Image at %08lx ...\n", prop_name, addr);
 
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_FORMAT);
-	ret = fit_check_format(fit);
-	if (ret) {
-		printf("Bad FIT %s image format! (err=%d)\n", prop_name, ret);
-		if (CONFIG_IS_ENABLED(FIT_SIGNATURE) && ret == -EADDRNOTAVAIL)
-			printf("Signature checking prevents use of unit addresses (@) in nodes\n");
+	if (!fit_check_format(fit)) {
+		printf("Bad FIT %s image format!\n", prop_name);
 		bootstage_error(bootstage_id + BOOTSTAGE_SUB_FORMAT);
-		return ret;
+		return -ENOEXEC;
 	}
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_FORMAT_OK);
 	if (fit_uname) {

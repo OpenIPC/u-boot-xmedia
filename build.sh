@@ -61,6 +61,7 @@ build_soc(){
     cat ${BOOT_SRCDIR}/openipc/${base}_config > ${BOOT_BUILDDIR}/.config && \
     { ! soc_has_socconfig ${soc} || cat ${BOOT_SRCDIR}/openipc/${soc}_config >> ${BOOT_BUILDDIR}/.config; } && \
     cat ${BOOT_SRCDIR}/openipc/nand_config >> ${BOOT_BUILDDIR}/.config && \
+    { [ ! -f ${BOOT_SRCDIR}/openipc/${base}_nand_config ] || cat ${BOOT_SRCDIR}/openipc/${base}_nand_config >> ${BOOT_BUILDDIR}/.config; } && \
     make ${MAKE_OPTS} KCFLAGS="${kcflags}" && \
     make ${MAKE_OPTS} SRCDIR=${BOOT_SRCDIR} u-boot-z.bin && \
     cp ${BOOT_BUILDDIR}/u-boot-xm*.bin ${BOOT_BUILDDIR}/../u-boot-${soc}-nand.bin || return 1

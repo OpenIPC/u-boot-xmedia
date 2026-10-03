@@ -75,7 +75,16 @@
 #define SFC "nand"
 #endif
 
+#ifdef CONFIG_FIT
+/*
+ * The kernel volume is a FIT (zImage + DTB) and the rootfs volume is UBIFS:
+ * the layout the firmware's NAND images carry.  Without FIT, keep the older
+ * squashfs-over-ubiblock layout.
+ */
+#define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=ubi0:rootfs rootfstype=ubifs ubi.mtd=2,2048 \${mtdparts} \${extras}"
+#else
 #define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=/dev/ubiblock0_1 ubi.mtd=2,2048 ubi.block=0,1 \${mtdparts} \${extras}"
+#endif
 #define CONFIG_BOOTCOMMAND "setenv setargs setenv bootargs ${bootargs}; run setargs; ubi part ubi; ubi read ${baseaddr} kernel; bootm ${baseaddr}; reset"
 
 /*
@@ -93,8 +102,21 @@
 #define CONFIG_ENV_SIZE 0x40000
 #define CONFIG_ENV_SECT_SIZE 0x20000
 
+#ifdef CONFIG_FIT
+/*
+ * Keep the relocated FDT inside the kernel's lowmem (mem=${osmem}).  bootm
+ * otherwise puts it at the top of RAM, which the kernel no longer maps once
+ * paging_init() honours mem=, and it dies silently in unflatten_device_tree()
+ * (Documentation/arm/Booting: the DTB must sit in lowmem).
+ */
+#define NAND_FIT_ENV "bootm_size=0x2000000\0"
+#else
+#define NAND_FIT_ENV
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"baseaddr=0x42000000\0" \
+	NAND_FIT_ENV \
 	"urnand=tftpboot ${baseaddr} rootfs.ubi.${soc} && nand erase 0x100000 0x7f00000; nand write.trimffs ${baseaddr} 0x100000 ${filesize}\0" \
 	"mtdparts=mtdparts="SFC":768k(boot),256k(env),-(ubi)\0" \
 	"nfsroot=/srv/nfs/" __stringify(PRODUCT_SOC) "\0" \

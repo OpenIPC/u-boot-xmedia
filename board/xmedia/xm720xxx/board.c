@@ -144,7 +144,14 @@ int misc_init_r(void)
 #ifdef CONFIG_RANDOM_ETHADDR
 	random_init_r();
 #endif
+#ifndef CONFIG_FIT
+	/*
+	 * Skip the legacy uImage data CRC for speed.  Not with FIT: there
+	 * the hashes are the whole point, and verify=n would make bootm
+	 * print them and boot a corrupted kernel anyway.
+	 */
 	env_set("verify", "n");
+#endif
 
 #ifdef CFG_MMU_HANDLEOK
 	dcache_stop();
