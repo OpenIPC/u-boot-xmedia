@@ -10,3 +10,5 @@ CONFIG_OF_LIBFDT=y
 # libfdt defaults EFI_LOADER on; it does not build here and a camera has no
 # use for it.
 # CONFIG_EFI_LOADER is not set
+# The boot command tells a FIT kernel volume from a legacy uImage by its magic.
+CONFIG_CMD_ITEST=y

@@ -75,17 +75,32 @@
 #define SFC "nand"
 #endif
 
+/*
+ * The squashfs-over-ubiblock layout: a legacy uImage in the kernel volume, a
+ * squashfs in the rootfs volume.  These are also the stock defaults every
+ * pre-FIT build saved, which misc_init_r() recognises to migrate them.
+ */
+#define NAND_UBIBLOCK_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=/dev/ubiblock0_1 ubi.mtd=2,2048 ubi.block=0,1 \${mtdparts} \${extras}"
+#define NAND_UBIBLOCK_BOOTCOMMAND "setenv setargs setenv bootargs ${bootargs}; run setargs; ubi part ubi; ubi read ${baseaddr} kernel; bootm ${baseaddr}; reset"
+
 #ifdef CONFIG_FIT
 /*
- * The kernel volume is a FIT (zImage + DTB) and the rootfs volume is UBIFS:
- * the layout the firmware's NAND images carry.  Without FIT, keep the older
- * squashfs-over-ubiblock layout.
+ * Both NAND layouts boot: a FIT (zImage + DTB) kernel volume comes with a
+ * UBIFS rootfs volume, a legacy uImage with the squashfs one.  The root is
+ * chosen from what the kernel volume holds, so this U-Boot also boots a
+ * camera that still carries the older layout.  0xedfe0dd0 is the FDT magic
+ * d00dfeed read as a little-endian word.
  */
-#define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=ubi0:rootfs rootfstype=ubifs ubi.mtd=2,2048 \${mtdparts} \${extras}"
+#define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init \${rootargs} ubi.mtd=2,2048 \${mtdparts} \${extras}"
+#define CONFIG_BOOTCOMMAND "ubi part ubi; ubi read ${baseaddr} kernel; " \
+	"if itest.l *${baseaddr} == 0xedfe0dd0; " \
+	"then setenv rootargs root=ubi0:rootfs rootfstype=ubifs; " \
+	"else setenv rootargs root=/dev/ubiblock0_1 ubi.block=0,1; fi; " \
+	"setenv setargs setenv bootargs ${bootargs}; run setargs; bootm ${baseaddr}; reset"
 #else
-#define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=/dev/ubiblock0_1 ubi.mtd=2,2048 ubi.block=0,1 \${mtdparts} \${extras}"
+#define CONFIG_BOOTARGS NAND_UBIBLOCK_BOOTARGS
+#define CONFIG_BOOTCOMMAND NAND_UBIBLOCK_BOOTCOMMAND
 #endif
-#define CONFIG_BOOTCOMMAND "setenv setargs setenv bootargs ${bootargs}; run setargs; ubi part ubi; ubi read ${baseaddr} kernel; bootm ${baseaddr}; reset"
 
 /*
  * urnand writes rootfs.ubi with nand write.trimffs: a UBI image pads every
