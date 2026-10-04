@@ -120,7 +120,9 @@
  * stamps ECC parity and the empty-page mark on them.  When UBIFS later
  * appends into such a page it is programmed twice and its ECC becomes
  * uncorrectable (OpenIPC/firmware#2519).  trimffs leaves the trailing 0xFF
- * pages of each block erased, as ubiformat does.
+ * pages of each block erased, as ubiformat does.  It erases the UBI
+ * partition by name, so to the end of the chip whatever its size: blocks
+ * left with stale data past the image would be corrupted PEBs to UBI.
  */
 #define CONFIG_CMD_NAND_TRIMFFS
 
@@ -144,7 +146,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"baseaddr=0x42000000\0" \
 	NAND_FIT_ENV \
-	"urnand=tftpboot ${baseaddr} rootfs.ubi.${soc} && nand erase 0x100000 0x7f00000; nand write.trimffs ${baseaddr} 0x100000 ${filesize}\0" \
+	"urnand=tftpboot ${baseaddr} rootfs.ubi.${soc} && nand erase.part ubi && nand write.trimffs ${baseaddr} 0x100000 ${filesize}\0" \
 	"mtdparts=mtdparts="SFC":768k(boot),256k(env),-(ubi)\0" \
 	"nfsroot=/srv/nfs/" __stringify(PRODUCT_SOC) "\0" \
 	"bootargsnfs=mem=\${osmem} console=ttyAMA0,115200 panic=20 root=/dev/nfs rootfstype=nfs ip=${ipaddr}:::255.255.255.0::eth0 nfsroot=${serverip}:${nfsroot},v3,nolock rw \${extras}\0" \
