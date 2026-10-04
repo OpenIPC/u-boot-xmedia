@@ -70,23 +70,23 @@ static int nand_bootargs_migrate(const char *args)
 }
 
 /*
- * An environment saved under a pre-FIT U-Boot overrides the new defaults.
+ * An environment saved under an earlier U-Boot overrides the new defaults.
  * Its verify=n, which those builds set on every boot, would turn the FIT
- * hash checks off, so drop it.  Its bootcmd and bootargs hardcode the root
- * of one layout -- the stock ubiblock one, or whatever the firmware's
- * allocator setup copied from /proc/cmdline -- and would not boot the
- * other.  A stock bootcmd -- the ubiblock build's, or the earlier FIT
- * build's that read a separate `kernel` volume -- is replaced by the one
- * that boots /boot from the UBIFS rootfs and only then falls back to a
- * `kernel` volume, and while that is the bootcmd in use, the root in
- * bootargs becomes ${rootargs}.  A bootcmd the owner edited is left alone,
+ * hash checks off, so drop it.  Its bootcmd reads a `kernel` volume -- the
+ * stock one of the retired ubiblock layout, or of the first FIT layout --
+ * and would not boot a kernel that lives in the rootfs.  Reinstalling such
+ * a camera writes the new U-Boot and the new UBI image but keeps the env, so
+ * a stock bootcmd is replaced by the one that boots /boot from the UBIFS
+ * rootfs, and while that is the bootcmd in use, a root hardcoded in bootargs
+ * -- stock, or copied there from /proc/cmdline by the firmware's allocator
+ * setup -- becomes ${rootargs}.  A bootcmd the owner edited is left alone,
  * and so are the bootargs it expands.  bootm_size is added when missing.
  *
  * The result is saved: Linux rewrites bootargs from the copy in flash
  * (fw_setenv), so a migration kept only in RAM would be undone on the
- * first boot.  The migrated env still boots under an older U-Boot: with no
- * /boot it falls through to the `kernel` volume path, and one without
- * itest takes the ubiblock root, its only layout.
+ * first boot.  It is one-way: an older U-Boot cannot boot the migrated env,
+ * so this U-Boot loaded into RAM on a camera that keeps an older one in
+ * flash leaves it needing this one written too.
  */
 void nand_fit_env_migrate(void)
 {
