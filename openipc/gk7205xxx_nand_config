@@ -1,4 +1,4 @@
-# Appended to the xm720xxx (gk7205v500/v510/v530) NAND build only.
+# Appended to the gk7205xxx-base NAND builds (hi3516ev200/ev300/dv200, hi3518ev300, gk7205v200/v300, gk7202v300, gk7605v100).
 # The kernel is /boot/fitImage in the UBIFS rootfs: zImage + DTB, each hashed.
 CONFIG_FIT=y
 CONFIG_FIT_FULL_CHECK=y

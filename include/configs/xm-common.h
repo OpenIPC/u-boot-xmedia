@@ -76,27 +76,39 @@
 #endif
 
 /*
- * The squashfs-over-ubiblock layout: a legacy uImage in the kernel volume, a
- * squashfs in the rootfs volume.  These are also the stock defaults every
- * pre-FIT build saved, which misc_init_r() recognises to migrate them.
+ * The retired squashfs-over-ubiblock layout: a legacy uImage in a kernel
+ * volume, a squashfs in the rootfs volume.  These are the stock defaults
+ * every pre-FIT build saved, which misc_init_r() recognises to replace them.
  */
 #define NAND_UBIBLOCK_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init root=/dev/ubiblock0_1 ubi.mtd=2,2048 ubi.block=0,1 \${mtdparts} \${extras}"
 #define NAND_UBIBLOCK_BOOTCOMMAND "setenv setargs setenv bootargs ${bootargs}; run setargs; ubi part ubi; ubi read ${baseaddr} kernel; bootm ${baseaddr}; reset"
 
 #ifdef CONFIG_FIT
 /*
- * Both NAND layouts boot: a FIT (zImage + DTB) kernel volume comes with a
- * UBIFS rootfs volume, a legacy uImage with the squashfs one.  The root is
- * chosen from what the kernel volume holds, so this U-Boot also boots a
- * camera that still carries the older layout.  0xedfe0dd0 is the FDT magic
- * d00dfeed read as a little-endian word.
+ * The kernel lives in the rootfs, as one file in the UBIFS rootfs volume:
+ * /boot/fitImage (zImage + DTB, hashed) or /boot/uImage (a legacy image, DTB
+ * appended).  No flash is set aside for a kernel, and the volumes take
+ * whatever size their images need.  An image carries one or the other; this
+ * boots either, trying the FIT first, and a FIT that fails its hashes falls
+ * through to a uImage if there is one.
+ *
+ * The layouts with a kernel volume of their own -- the squashfs-over-ubiblock
+ * one and the first FIT one -- are retired: a camera on either is reinstalled.
+ * Their stock boot commands are kept here so misc_init_r() can recognise a
+ * saved one and replace it once the new layout is written; until then a
+ * camera keeps its own, which still boots under this U-Boot (hence itest).
  */
 #define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init \${rootargs} ubi.mtd=2,2048 \${mtdparts} \${extras}"
-#define CONFIG_BOOTCOMMAND "ubi part ubi; ubi read ${baseaddr} kernel; " \
+#define NAND_FITVOL_BOOTCOMMAND "ubi part ubi; ubi read ${baseaddr} kernel; " \
 	"if itest.l *${baseaddr} == 0xedfe0dd0; " \
 	"then setenv rootargs root=ubi0:rootfs rootfstype=ubifs; " \
 	"else setenv rootargs root=/dev/ubiblock0_1 ubi.block=0,1; fi; " \
 	"setenv setargs setenv bootargs ${bootargs}; run setargs; bootm ${baseaddr}; reset"
+#define CONFIG_BOOTCOMMAND "ubi part ubi; ubifsmount ubi0:rootfs; " \
+	"setenv rootargs root=ubi0:rootfs rootfstype=ubifs; " \
+	"setenv setargs setenv bootargs ${bootargs}; run setargs; " \
+	"if ubifsload ${baseaddr} /boot/fitImage; then bootm ${baseaddr}; fi; " \
+	"if ubifsload ${baseaddr} /boot/uImage; then bootm ${baseaddr}; fi; reset"
 #else
 #define CONFIG_BOOTARGS NAND_UBIBLOCK_BOOTARGS
 #define CONFIG_BOOTCOMMAND NAND_UBIBLOCK_BOOTCOMMAND
