@@ -94,8 +94,9 @@
  *
  * The layouts with a kernel volume of their own -- the squashfs-over-ubiblock
  * one and the first FIT one -- are retired: a camera on either is reinstalled.
- * Their stock boot commands are kept here only so misc_init_r() can recognise
- * a saved one and replace it.
+ * Their stock boot commands are kept here so misc_init_r() can recognise a
+ * saved one and replace it once the new layout is written; until then a
+ * camera keeps its own, which still boots under this U-Boot (hence itest).
  */
 #define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init \${rootargs} ubi.mtd=2,2048 \${mtdparts} \${extras}"
 #define NAND_FITVOL_BOOTCOMMAND "ubi part ubi; ubi read ${baseaddr} kernel; " \

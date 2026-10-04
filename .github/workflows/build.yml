@@ -227,8 +227,8 @@ jobs:
           #   hi3516ev200/hi3516ev300/hi3518ev300/hi3516dv200 -- this repo
           #     replaces u-boot-hi3516ev200 for them, NOR and NAND alike: it
           #     carries the UBI-only NAND layout (768k boot, 256k env, the rest
-          #     one UBI device with a FIT kernel volume) that the firmware's NAND
-          #     packages now install, and its env location on NOR (0x40000,
+          #     one UBI device whose UBIFS rootfs holds the kernel in /boot)
+          #     that the firmware's NAND packages now install, and its env location on NOR (0x40000,
           #     64K) is the one their NOR cameras already have.
           # The goke parts it also builds (gk7202v300/gk7205v200/gk7205v300/
           # gk7605v100) stay with u-boot-gk7205v200 and are not published here.

@@ -1,5 +1,5 @@
 # Appended to the xm720xxx (gk7205v500/v510/v530) NAND build only.
-# The kernel volume holds a FIT image: zImage + DTB, each hashed.
+# The kernel is /boot/fitImage in the UBIFS rootfs: zImage + DTB, each hashed.
 CONFIG_FIT=y
 CONFIG_FIT_FULL_CHECK=y
 # CONFIG_FIT_ENABLE_SHA256_SUPPORT is not set
@@ -10,3 +10,6 @@ CONFIG_OF_LIBFDT=y
 # libfdt defaults EFI_LOADER on; it does not build here and a camera has no
 # use for it.
 # CONFIG_EFI_LOADER is not set
+# A camera still on a retired layout keeps its saved bootcmd until it is
+# reinstalled; the first FIT layout's tells its kernel volume by magic.
+CONFIG_CMD_ITEST=y

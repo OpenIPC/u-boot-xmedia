@@ -5,6 +5,7 @@
  */
 #include <common.h>
 #if defined(CONFIG_FIT) && defined(CONFIG_FMC_SPI_NAND)
+#include <command.h>
 #include <env.h>
 #include <malloc.h>
 #include "nand_fit_env.h"
@@ -84,10 +85,26 @@ static int nand_bootargs_migrate(const char *args)
  *
  * The result is saved: Linux rewrites bootargs from the copy in flash
  * (fw_setenv), so a migration kept only in RAM would be undone on the
- * first boot.  It is one-way: an older U-Boot cannot boot the migrated env,
- * so this U-Boot loaded into RAM on a camera that keeps an older one in
- * flash leaves it needing this one written too.
+ * first boot.  It is one-way -- an older U-Boot cannot boot the migrated
+ * env -- which is why it waits for the new layout to be on the flash.
  */
+/*
+ * Whether the flash holds the current layout: a UBIFS rootfs with a kernel
+ * in /boot.  Asked only before replacing a retired layout's stock bootcmd,
+ * so a camera still on that layout -- given this U-Boot alone, or this one
+ * loaded into RAM for a recovery -- keeps a bootcmd that boots it, and is
+ * migrated only once its new UBI image is written.
+ */
+static int nand_kernel_in_rootfs(void)
+{
+	int ret;
+
+	ret = !run_command("ubi part ubi && ubifsmount ubi0:rootfs && "
+			   "ubifsls /boot/fitImage || ubifsls /boot/uImage", 0);
+	run_command("ubifsumount", 0);
+	return ret;
+}
+
 void nand_fit_env_migrate(void)
 {
 	const char *cmd = env_get("bootcmd");
@@ -107,7 +124,8 @@ void nand_fit_env_migrate(void)
 		changed = 1;
 	}
 	if (cmd && (!strcmp(cmd, NAND_UBIBLOCK_BOOTCOMMAND) ||
-		    !strcmp(cmd, NAND_FITVOL_BOOTCOMMAND))) {
+		    !strcmp(cmd, NAND_FITVOL_BOOTCOMMAND)) &&
+	    nand_kernel_in_rootfs()) {
 		env_set("bootcmd", CONFIG_BOOTCOMMAND);
 		cmd = env_get("bootcmd");
 		changed = 1;
