@@ -81,7 +81,8 @@ static int nand_bootargs_migrate(const char *args)
  * rootfs, and while that is the bootcmd in use, a root hardcoded in bootargs
  * -- stock, or copied there from /proc/cmdline by the firmware's allocator
  * setup -- becomes ${rootargs}.  A bootcmd the owner edited is left alone,
- * and so are the bootargs it expands.  bootm_size is added when missing.
+ * and so are the bootargs it expands.  bootm_size is added when missing,
+ * and a partition table without a `ubi` partition is set back to the default.
  *
  * The result is saved: Linux rewrites bootargs from the copy in flash
  * (fw_setenv), so a migration kept only in RAM would be undone on the
@@ -108,7 +109,7 @@ static int nand_kernel_in_rootfs(void)
 void nand_fit_env_migrate(void)
 {
 	const char *cmd = env_get("bootcmd");
-	const char *args;
+	const char *args, *mtdparts;
 	int changed = 0;
 
 	if (env_get("verify")) {
@@ -119,6 +120,16 @@ void nand_fit_env_migrate(void)
 	 * A FIT boot relocates the DTB under bootm_size; an environment saved
 	 * before there was one would put it out of the kernel's lowmem.
 	 */
+	/*
+	 * urnand and the boot command find the UBI partition by name; a saved
+	 * table that has none gets the default one back, as the boot and env
+	 * partitions are fixed by this U-Boot anyway.
+	 */
+	mtdparts = env_get("mtdparts");
+	if (!mtdparts || !strstr(mtdparts, "(ubi)")) {
+		env_set("mtdparts", NAND_MTDPARTS);
+		changed = 1;
+	}
 	if (!env_get("bootm_size")) {
 		env_set("bootm_size", "0x2000000");
 		changed = 1;

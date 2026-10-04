@@ -17,6 +17,9 @@ CONFIG_ENV_IS_IN_SPI_NAND=y
 # CONFIG_ENV_IS_IN_UBI is not set
 
 CONFIG_MTD_PARTITIONS=y
+# `nand erase.part ubi`: erase the UBI partition to the end of the chip,
+# whatever its size, from the mtdparts/mtdids in the env.
+CONFIG_CMD_MTDPARTS=y
 CONFIG_MTD_RAW_NAND=y
 CONFIG_SYS_NAND_USE_FLASH_BBT=y
 CONFIG_FMC_SPI_NAND=y
