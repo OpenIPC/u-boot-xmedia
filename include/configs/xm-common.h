@@ -85,18 +85,37 @@
 
 #ifdef CONFIG_FIT
 /*
- * Both NAND layouts boot: a FIT (zImage + DTB) kernel volume comes with a
- * UBIFS rootfs volume, a legacy uImage with the squashfs one.  The root is
- * chosen from what the kernel volume holds, so this U-Boot also boots a
- * camera that still carries the older layout.  0xedfe0dd0 is the FDT magic
- * d00dfeed read as a little-endian word.
+ * The kernel lives in the rootfs, as one file in the UBIFS rootfs volume:
+ * /boot/fitImage (zImage + DTB, hashed) or /boot/uImage (a legacy image, DTB
+ * appended).  No flash is set aside for a kernel, and the volumes take
+ * whatever size their images need.  An image carries one or the other; this
+ * boots either, trying the FIT first, and a FIT that fails its hashes falls
+ * through to a uImage if there is one.
+ *
+ * Without /boot -- a camera installed with a separate `kernel` volume -- the
+ * older path still runs: read that volume, and pick the root from what it
+ * holds (a FIT with the UBIFS root, a uImage with the ubiblock squashfs).
+ * 0xedfe0dd0 is the FDT magic d00dfeed read as a little-endian word.
+ *
+ * NAND_FITVOL_BOOTCOMMAND is that older path on its own, as the previous
+ * FIT build saved it; misc_init_r() recognises it to migrate it.
  */
 #define CONFIG_BOOTARGS "mem=\${osmem} console=ttyAMA0,115200 panic=20 init=/init \${rootargs} ubi.mtd=2,2048 \${mtdparts} \${extras}"
-#define CONFIG_BOOTCOMMAND "ubi part ubi; ubi read ${baseaddr} kernel; " \
+#define NAND_FITVOL_BOOT "ubi read ${baseaddr} kernel; " \
 	"if itest.l *${baseaddr} == 0xedfe0dd0; " \
 	"then setenv rootargs root=ubi0:rootfs rootfstype=ubifs; " \
 	"else setenv rootargs root=/dev/ubiblock0_1 ubi.block=0,1; fi; " \
 	"setenv setargs setenv bootargs ${bootargs}; run setargs; bootm ${baseaddr}; reset"
+#define NAND_FITVOL_BOOTCOMMAND "ubi part ubi; " NAND_FITVOL_BOOT
+#define NAND_UBIFS_BOOT(file) \
+	"if ubifsload ${baseaddr} " file "; then " \
+	"setenv rootargs root=ubi0:rootfs rootfstype=ubifs; " \
+	"setenv setargs setenv bootargs ${bootargs}; run setargs; bootm ${baseaddr}; fi; "
+#define CONFIG_BOOTCOMMAND "ubi part ubi; " \
+	"if ubifsmount ubi0:rootfs; then " \
+	NAND_UBIFS_BOOT("/boot/fitImage") \
+	NAND_UBIFS_BOOT("/boot/uImage") \
+	"fi; " NAND_FITVOL_BOOT
 #else
 #define CONFIG_BOOTARGS NAND_UBIBLOCK_BOOTARGS
 #define CONFIG_BOOTCOMMAND NAND_UBIBLOCK_BOOTCOMMAND

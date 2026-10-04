@@ -75,15 +75,18 @@ static int nand_bootargs_migrate(const char *args)
  * hash checks off, so drop it.  Its bootcmd and bootargs hardcode the root
  * of one layout -- the stock ubiblock one, or whatever the firmware's
  * allocator setup copied from /proc/cmdline -- and would not boot the
- * other.  A stock bootcmd is replaced by the one that picks the root from
- * the kernel image, and while that is the bootcmd in use, the root in
+ * other.  A stock bootcmd -- the ubiblock build's, or the earlier FIT
+ * build's that read a separate `kernel` volume -- is replaced by the one
+ * that boots /boot from the UBIFS rootfs and only then falls back to a
+ * `kernel` volume, and while that is the bootcmd in use, the root in
  * bootargs becomes ${rootargs}.  A bootcmd the owner edited is left alone,
- * and so are the bootargs it expands.
+ * and so are the bootargs it expands.  bootm_size is added when missing.
  *
  * The result is saved: Linux rewrites bootargs from the copy in flash
  * (fw_setenv), so a migration kept only in RAM would be undone on the
- * first boot.  The migrated env still boots under an older U-Boot, which
- * has no itest and so falls through to the ubiblock root, its only layout.
+ * first boot.  The migrated env still boots under an older U-Boot: with no
+ * /boot it falls through to the `kernel` volume path, and one without
+ * itest takes the ubiblock root, its only layout.
  */
 void nand_fit_env_migrate(void)
 {
@@ -95,7 +98,16 @@ void nand_fit_env_migrate(void)
 		env_set("verify", NULL);
 		changed = 1;
 	}
-	if (cmd && !strcmp(cmd, NAND_UBIBLOCK_BOOTCOMMAND)) {
+	/*
+	 * A FIT boot relocates the DTB under bootm_size; an environment saved
+	 * before there was one would put it out of the kernel's lowmem.
+	 */
+	if (!env_get("bootm_size")) {
+		env_set("bootm_size", "0x2000000");
+		changed = 1;
+	}
+	if (cmd && (!strcmp(cmd, NAND_UBIBLOCK_BOOTCOMMAND) ||
+		    !strcmp(cmd, NAND_FITVOL_BOOTCOMMAND))) {
 		env_set("bootcmd", CONFIG_BOOTCOMMAND);
 		cmd = env_get("bootcmd");
 		changed = 1;
