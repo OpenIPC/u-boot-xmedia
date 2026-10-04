@@ -181,7 +181,7 @@ jobs:
             exit 1
           fi
 
-  # Publish job — uploads the xmedia-exclusive NOR/NAND images to the
+  # Publish job — uploads the NOR/NAND images of the SoCs this repo owns to the
   # OpenIPC/firmware `latest` release. SoCs owned by a dedicated per-SoC
   # repo are deliberately NOT published here (see the loop below for which
   # and why). Common failure modes:
@@ -222,20 +222,20 @@ jobs:
               sleep $((i*10))
             done
           }
-          # Publish ONLY the xm720 V500 family — the one set genuinely
-          # exclusive to xmedia. Every other SoC xmedia builds is consumed by
-          # OpenIPC/defib as u-boot-<soc>-universal.bin, owned by a dedicated
-          # repo, so xmedia's -nor/-nand for them is non-canonical dead weight:
-          #   gk7202v300/gk7205v200/gk7205v300/gk7605v100 -> u-boot-gk7205v200
-          #   hi3516ev200/hi3516ev300/hi3518ev300         -> u-boot-hi3516ev200
-          #   hi3516dv200 -> u-boot-hi3516ev200 too (in defib AVAILABLE_FIRMWARE
-          #                  as -universal; that repo just hasn't committed its
-          #                  config-/reg_info_ files yet — not xmedia's to own)
-          # gk7205v500/v510/v530 are NOT in defib AVAILABLE_FIRMWARE: they are
-          # RAM-loaded via the V500 protocol with a manual `-f`, where the user
-          # picks the nor or nand variant — so -nor/-nand is the correct naming
-          # and no other repo builds these xm720 parts.
-          for soc in gk7205v500 gk7205v510 gk7205v530; do
+          # Publish the SoCs this repo owns:
+          #   gk7205v500/v510/v530                    -- no other repo builds them
+          #   hi3516ev200/hi3516ev300/hi3518ev300/hi3516dv200 -- this repo
+          #     replaces u-boot-hi3516ev200 for them, NOR and NAND alike: it
+          #     carries the UBI-only NAND layout (768k boot, 256k env, the rest
+          #     one UBI device with a FIT kernel volume) that the firmware's NAND
+          #     packages now install, and its env location on NOR (0x40000,
+          #     64K) is the one their NOR cameras already have.
+          # The goke parts it also builds (gk7202v300/gk7205v200/gk7205v300/
+          # gk7605v100) stay with u-boot-gk7205v200 and are not published here.
+          # Each SoC is published as -nor and -nand: the flash type, not a
+          # "universal" image, decides the partition table.
+          for soc in gk7205v500 gk7205v510 gk7205v530 \
+                     hi3516ev200 hi3516ev300 hi3518ev300 hi3516dv200; do
             for kind in nor nand; do
               f="artifacts/u-boot-${soc}/u-boot-${soc}-${kind}.bin"
               test -f "$f"

@@ -14,6 +14,7 @@
 #include <sdhci.h>
 #include <cpu_common.h>
 #include <asm/mach-types.h>
+#include "../common/nand_fit_env.h"
 
 #ifndef CONFIG_SYS_DCACHE_OFF
 void enable_caches(void)
@@ -280,7 +281,16 @@ int misc_init_r(void)
 #ifdef CONFIG_RANDOM_ETHADDR
 	random_init_r();
 #endif
+#ifndef CONFIG_FIT
+	/*
+	 * Skip the legacy uImage data CRC for speed.  Not with FIT: there
+	 * the hashes are the whole point, and verify=n would make bootm
+	 * print them and boot a corrupted kernel anyway.
+	 */
 	env_set("verify", "n");
+#elif defined(CONFIG_FMC_SPI_NAND)
+	nand_fit_env_migrate();
+#endif
 
 #ifdef CFG_MMU_HANDLEOK
 	dcache_stop();

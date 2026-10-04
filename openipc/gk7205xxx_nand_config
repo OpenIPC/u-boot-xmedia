@@ -1,0 +1,14 @@
+# Appended to the gk7205xxx-base NAND builds (hi3516ev200/ev300/dv200, hi3518ev300, gk7205v200/v300, gk7202v300, gk7605v100).
+# The kernel volume holds a FIT image: zImage + DTB, each hashed.
+CONFIG_FIT=y
+CONFIG_FIT_FULL_CHECK=y
+# CONFIG_FIT_ENABLE_SHA256_SUPPORT is not set
+# CONFIG_FIT_SIGNATURE is not set
+# CONFIG_FIT_VERBOSE is not set
+# CONFIG_FIT_BEST_MATCH is not set
+CONFIG_OF_LIBFDT=y
+# libfdt defaults EFI_LOADER on; it does not build here and a camera has no
+# use for it.
+# CONFIG_EFI_LOADER is not set
+# The boot command tells a FIT kernel volume from a legacy uImage by its magic.
+CONFIG_CMD_ITEST=y
