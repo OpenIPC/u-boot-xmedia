@@ -193,11 +193,24 @@ jobs:
   #     PAT (Contents: read+write on OpenIPC/firmware) and update the secret.
   #   404 on `gh release upload latest`: the `latest` tag was deleted in
   #     OpenIPC/firmware — recreate it before retrying.
+  #
+  # The job then tells openipc.org what it uploaded (see the last steps), and
+  # the two go together: openipc.org builds its full-flash images from these
+  # binaries and refuses any whose size and sha256 differ from its record, so
+  # a report must describe the bytes `latest` holds. The concurrency group
+  # keeps a second master run from uploading between this run's upload and its
+  # report; a run waiting its turn is never cancelled once it has started.
   publish:
     needs: [build, qemu_smoke]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    concurrency:
+      group: publish-firmware-latest
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -242,3 +255,33 @@ jobs:
               upload "$f"
             done
           done
+
+      # The push script is OpenIPC/firmware's, at a fixed commit: the only
+      # code this job checks out, since it holds an id-token.
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenIPC/firmware
+          ref: 7fa63ce694cb5d27c19d4f19058ba2c044849db4
+          sparse-checkout: .github/scripts
+          path: firmware
+
+      # The contract is PUSH.md in OpenIPC/website (source `uboot`, release
+      # `latest`, one id per run). The digests are of the files uploaded above,
+      # hashed here, so the push describes exactly those bytes.
+      - name: Report to openipc.org
+        run: |
+          set -eu
+          mkdir published
+          for soc in gk7205v500 gk7205v510 gk7205v530 \
+                     hi3516ev200 hi3516ev300 hi3518ev300 hi3516dv200; do
+            for kind in nor nand; do
+              cp "artifacts/u-boot-${soc}/u-boot-${soc}-${kind}.bin" published/
+            done
+          done
+          python3 firmware/.github/scripts/push_build.py \
+            --source uboot \
+            --build-id "uboot-$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_SHA::7}" \
+            --release latest \
+            --sha "$GITHUB_SHA" \
+            --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --assets 'published/*.bin'
